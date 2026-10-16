@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>작가 태그 통계 뷰어</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#16181c; --bg2:#1c1f24; --bg3:#23272e;
+  --line:#2e333b; --line2:#3a4049;
+  --fg:#dfe3e8; --fg2:#9aa3ad; --fg3:#6b747e;
+  --accent:#7c8cf8; --accent-dim:#4a55a8; --warn:#c2703f; --r:6px;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:#f7f8fa; --bg2:#fff; --bg3:#eef0f3;
+  --line:#dde1e6; --line2:#c6ccd4;
+  --fg:#1e2227; --fg2:#5c656f; --fg3:#8b949e;
+  --accent:#4a57c4; --accent-dim:#97a0e0;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg);
+  font:14px/1.55 "Pretendard",-apple-system,"Segoe UI","Malgun Gothic",sans-serif; }
+button,input,select { font:inherit; color:inherit; }
+button { background:none; border:0; cursor:pointer; }
+input,select { background:var(--bg2); color:var(--fg);
+  border:1px solid var(--line2); border-radius:var(--r); padding:5px 9px; }
+.top { position:sticky; top:0; z-index:9; display:flex; gap:10px; align-items:center;
+  flex-wrap:wrap; padding:9px 14px; background:var(--bg);
+  border-bottom:1px solid var(--line); }
+.brand { font-weight:600; white-space:nowrap; }
+.brand small { color:var(--fg3); font-weight:400; margin-left:6px; }
+.grow { flex:1; }
+.btn { padding:5px 11px; border:1px solid var(--line2); border-radius:var(--r); }
+.btn:hover { border-color:var(--accent-dim); }
+.btn[aria-selected="true"] { background:var(--bg3); }
+main { padding:10px 14px 14px; }
+[hidden] { display:none !important; }
+.muted { color:var(--fg2); } .tiny { font-size:12px; }
+.drop { display:grid; gap:10px; justify-items:center; text-align:center;
+  padding:52px 18px; border:2px dashed var(--line2); border-radius:12px;
+  background:var(--bg2); margin:28px auto; max-width:620px; }
+.drop.hot { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 9%,var(--bg2)); }
+.drop h1 { margin:0; font-size:17px; }
+.drop label { cursor:pointer; }
+/* border-collapse:collapse 는 sticky 머리글과 사이가 나쁘다. 셀 테두리가 표에
+   귀속되면서 머리글이 행 아래로 깔리는 일이 있다. separate 로 두고 테두리는
+   셀 아래쪽에만 그린다. */
+table { width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
+th,td { text-align:left; padding:6px 9px; border-bottom:1px solid var(--line); }
+/* 머리글이 행과 겹치던 문제.
+   페이지 스크롤에 맞춰 top 을 계산하는 방식은 위 막대 높이가 바뀔 때마다 어긋났다.
+   표를 제 스크롤 상자에 넣고 top:0 으로 붙이면 계산할 게 없어진다.
+   배경은 반드시 불투명해야 한다 — 투명하면 아래 행 글자가 그대로 비친다. */
+.tablescroll { overflow:auto; max-height:calc(100vh - 210px); min-height:240px;
+  border:1px solid var(--line); border-radius:var(--r); }
+th { color:var(--fg3); font-weight:500; font-size:11.5px;
+  position:sticky; top:0; z-index:3;
+  background:var(--bg2); white-space:nowrap;
+  border-bottom:1px solid var(--line2); }
+th.num { text-align:right; }
+/* 이름을 누르면 정렬. 돋보기와 형제라 서로 건드리지 않는다. */
+.sortbtn { font:inherit; color:inherit; cursor:pointer; padding:2px; border-radius:4px; }
+.sortbtn:hover { color:var(--fg); background:var(--bg3); }
+.sortbtn[aria-sort="ascending"], .sortbtn[aria-sort="descending"] { color:var(--fg); }
+.sortbtn .dir { font-style:normal; font-size:10px; }
+/* 정렬할 수 없는 열은 눌러도 아무 일이 없다. 커서로도 알 수 있게 둔다. */
+.nosort { cursor:default; }
+/* 행에는 position 을 주지 않는다. 쌓임 맥락이 생겨 머리글을 덮는다. */
+tbody td { border-bottom:1px solid var(--line); }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+tbody tr:hover { background:var(--bg2); }
+tbody tr.on { background:var(--bg3); }
+.tag { cursor:pointer; font-weight:500; }
+.tag:hover { color:var(--accent); text-decoration:underline; }
+.wrap { overflow-x:auto; }
+.cards { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  margin-bottom:10px; }
+.cards[hidden] { display:none; }
+.stat { background:var(--bg2); border:1px solid var(--line); border-radius:var(--r); padding:10px; }
+.stat b { display:block; font-size:18px; }
+.stat span { color:var(--fg3); font-size:11.5px; }
+.bar { height:6px; background:var(--bg3); border-radius:3px; position:relative;
+  min-width:64px; overflow:hidden; }
+.bar i { position:absolute; top:0; bottom:0; background:var(--accent-dim); border-radius:3px; }
+.bar u { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--accent); }
+.panel { position:fixed; right:0; top:0; bottom:0; width:min(420px,94vw); z-index:20;
+  background:var(--bg2); border-left:1px solid var(--line); padding:14px; overflow:auto; }
+.panel[hidden] { display:none; }
+.panel h3 { margin:0 0 4px; font-size:15px; }
+.sect { margin:14px 0 6px; font-size:11.5px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--fg3); }
+.err { color:var(--warn); }
+
+/* 용어 설명 — 돋보기를 누르면 뜨는 쪽지 */
+.why { display:inline-grid; place-items:center; width:17px; height:17px; margin-left:3px;
+  border-radius:50%; border:1px solid var(--line2); color:var(--fg3);
+  font-size:10px; line-height:1; cursor:help; vertical-align:middle; flex:0 0 auto; }
+.why:hover, .why[aria-expanded="true"] { border-color:var(--accent); color:var(--accent); }
+th .why { cursor:pointer; }
+#tip {
+  position:fixed; z-index:60; max-width:min(320px,88vw); padding:10px 12px;
+  background:var(--bg2); color:var(--fg); border:1px solid var(--line2);
+  border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,.45); font-size:12.5px; line-height:1.6;
+}
+#tip[hidden] { display:none; }
+#tip b { display:block; margin-bottom:4px; font-size:13px; }
+#tipBack { position:fixed; inset:0; z-index:59; }
+#tipBack[hidden] { display:none; }
+.stat b { display:flex; align-items:center; gap:2px; }
+@media (max-width:760px) {
+  main { padding:10px; }
+  .tablescroll { max-height:calc(100vh - 260px); }
+}
+
+/* DUST system surfaces and touch-sized controls */
+:root,:root[data-theme="light"]{color-scheme:light;--bg:#ececf0;--bg2:#fff;--bg3:#e5e5ea;--line:rgba(60,60,67,.16);--line2:#b8b8c0;--fg:#1d1d1f;--fg2:#66666e;--fg3:#66666e;--accent:#0a84ff;--accent-dim:#85bfff;--r:12px}
+html,body{touch-action:manipulation}body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
+.top{padding:12px 4px;gap:8px;position:static;background:transparent}.brand{font-size:14px}.brand small{display:block;margin:0}
+main{padding:0 4px 12px}input,select{font-size:16px;min-height:44px;min-width:0}button,.btn{min-height:44px}.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid var(--line);font-weight:600;padding:9px 12px;border-radius:11px}
+#q{flex:1;min-width:130px;width:100%}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:0 4px 12px}.controls select{flex:1;width:150px}.drop{margin:8px 0 16px;padding:36px 16px;border-radius:18px}.drop p{margin:0}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:12px;border-radius:14px}.stat:last-child:nth-child(odd){grid-column:1/-1}.stat b{font-size:23px}.stat span{font-size:12px}.tablescroll{max-height:60vh;min-height:180px;background:var(--bg2);border-radius:14px}th,td{padding:10px 8px}th{color:var(--fg2)}.sortbtn{min-height:32px}.why{min-height:30px;width:30px;height:30px;font-size:13px;border:0;background:var(--bg3)}.tag{min-height:44px;display:inline-flex;align-items:center;text-align:left;color:inherit;font:inherit;font-weight:600}.panel{width:min(480px,100vw);padding:18px;border-radius:18px 0 0 18px;box-shadow:-12px 0 40px #0003}.panel h3{font-size:20px;overflow-wrap:anywhere}.panel .tablescroll{min-height:0}#panelBack{position:fixed;inset:0;background:#0005;z-index:19}#err{margin:0 4px 12px;overflow-wrap:anywhere}#err:empty{display:none}#sourceInfo{font-size:12px;color:var(--fg2);line-height:1.6;overflow-wrap:anywhere}.pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}.pager span{font-size:12px;color:var(--fg2)}.btn:disabled{opacity:.4;cursor:default}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.source{margin:0 0 12px;color:var(--fg2);font-size:12px}.source summary{cursor:pointer;min-height:32px;display:flex;align-items:center}.source summary::before{content:"＋";margin-right:6px}.source[open] summary::before{content:"−"}.source #sourceInfo{padding:0 0 8px}.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{padding:10px}.stat b{font-size:20px}.stat:last-child:nth-child(odd){grid-column:span 2}.stat .why{width:24px;height:24px;min-height:24px;margin-left:0}.stat span{font-size:11px}.panel .cards{grid-template-columns:repeat(2,minmax(0,1fr))}.panel .stat:last-child:nth-child(odd){grid-column:1/-1}
+@media(min-width:600px){.cards{grid-template-columns:repeat(5,minmax(0,1fr))}.stat:last-child:nth-child(odd){grid-column:auto}.stat b{font-size:20px}}
+@media(max-width:420px){.brand{width:100%}.grow{display:none}.panel{border-radius:18px 18px 0 0;top:10px}.panel .cards{grid-template-columns:1fr 1fr}.top{padding-top:4px}}
+
+.mobile-sort,.mobile-glossary{display:none}
+@media all{
+ .brand{display:none}.top{padding:4px 4px 12px;border-bottom:0}.grow{display:none}#q{width:0;flex:1}.controls{margin-bottom:8px}.source{margin-bottom:8px}
+ .cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.cards .stat:last-child:nth-child(odd){grid-column:span 2}.stat{padding:8px}.stat b{font-size:18px}.stat span{font-size:10px}.stat .why{height:22px;min-height:22px;width:22px}
+ .mobile-glossary{display:block;margin:8px 0 12px;font-size:12px;color:var(--fg2)}.mobile-glossary summary{min-height:32px;cursor:pointer}#mobileTerms{display:flex;flex-wrap:wrap;gap:8px}#mobileTerms span{display:inline-flex;align-items:center}
+ .mobile-sort{display:flex;gap:8px;align-items:center;margin-bottom:12px}.mobile-sort label{font-size:12px;color:var(--fg2)}.mobile-sort select{flex:1;width:0}.mobile-sort .btn{font-size:12px;padding:8px}
+ #body>.tablescroll{max-height:none;min-height:0;overflow:visible;border:0;background:none}
+ #tbl,#tbl tbody{display:block;width:100%}#tbl thead{display:none}
+ #rows{display:grid!important;gap:10px}#rows tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px}
+ #rows td{border:0;padding:0;min-width:0;text-align:left;font-size:14px;overflow-wrap:anywhere}
+ #rows td::before{content:attr(data-label);display:block;color:var(--fg2);font-size:11px;margin-bottom:3px}
+ #rows td:nth-child(2){grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:6px}#rows td:nth-child(2)::before{display:none}
+ #rows td:first-child,#rows td:nth-child(n+7){display:none}
+ #rows .tag{width:100%;overflow-wrap:anywhere;min-height:36px;font-size:16px;padding:0}#rows .tiny{font-size:11px}
+ .panel{width:100%;max-width:100%;border-radius:14px 14px 0 0;top:0;padding:14px}.panel code{overflow-wrap:anywhere}.panel .tag{overflow-wrap:anywhere;max-width:100%;padding:0}
+ .panel .tablescroll{max-height:none!important;overflow:visible;border:0;background:none}.panel table,.panel tbody{display:block;width:100%}.panel thead{display:none}.panel tbody{display:grid;gap:8px}.panel tbody tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px;background:var(--bg);border-radius:12px}.panel td{min-width:0;overflow-wrap:anywhere;text-align:left;padding:0;border:0}.panel td:first-child{grid-column:1/-1}.panel td:not(:first-child)::before{content:attr(data-label);display:block;font-size:10px;color:var(--fg2);margin-bottom:3px}.panel .cards{grid-template-columns:1fr 1fr}
+ .pager{padding-bottom:16px}.pager span{text-align:center}
+}
+.local-storage{align-items:center;justify-content:space-between}.local-storage span{font-size:12px;color:var(--fg2);overflow-wrap:anywhere;min-width:0;flex:1}.local-storage button{font-size:12px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <span class="brand">Artist Tags <small>작가 태그 통계</small></span>
+  <span class="grow"></span>
+  <input id="q" type="search" placeholder="작가 검색" hidden>
+  <label class="btn" id="pickWrap" hidden>다른 파일<input type="file" id="pick2" accept=".json,.csv" hidden></label>
+</header>
+
+<div class="controls local-storage"><span id="storageStatus" role="status">내 통계 파일을 불러오세요</span><button class="btn" id="clearStored" hidden>저장 데이터 삭제</button></div>
+<p class="err tiny" id="err" role="alert"></p>
+<main>
+  <div class="drop" id="drop">
+    <h1>통계 파일을 여기에 놓으세요</h1>
+    <p class="muted tiny">내 기기의 JSON 또는 CSV를 선택하세요.<br>마지막으로 불러온 파일은 이 브라우저에 저장됩니다.<br>파일은 서버로 전송되지 않습니다.</p>
+    <label class="btn">파일 고르기<input type="file" id="pick" accept=".json,.csv" hidden></label>
+
+  </div>
+
+  <div id="body" hidden>
+    <details class="source"><summary>데이터 출처·집계 정보</summary><div id="sourceInfo"></div></details>
+    <div class="cards" id="cards"></div>
+    <p class="muted tiny" id="count"></p>
+    <details class="mobile-glossary"><summary>통계 용어 설명</summary><div id="mobileTerms"></div></details>
+    <div class="mobile-sort"><label for="mobileSort">정렬</label><select id="mobileSort"><option value="count">등장 횟수</option><option value="tag">작가 이름</option><option value="share">비율</option><option value="weight_mean">평균 가중치</option><option value="weight_median">중앙값</option><option value="weight_iqr">사분위폭</option><option value="weight_mode">최빈 가중치</option><option value="rank">원본 순서</option></select><button class="btn" id="sortDirection">내림차순</button></div>
+    <div class="tablescroll">
+      <table id="tbl">
+        <thead><tr>
+          <th class="num"><button class="sortbtn" data-k="rank">#<i class="dir"></i></button></th>
+          <th><button class="sortbtn" data-k="tag">작가<i class="dir"></i></button></th>
+          <th class="num"><button class="sortbtn" data-k="count">등장<i class="dir"></i></button><button class="why" data-why="등장" aria-expanded="false" title="설명 보기">?</button></th>
+          <th class="num"><button class="sortbtn" data-k="share">비율<i class="dir"></i></button><button class="why" data-why="비율" aria-expanded="false" title="설명 보기">?</button></th>
+          <th class="num"><button class="sortbtn" data-k="weight_mean">평균<i class="dir"></i></button><button class="why" data-why="평균" aria-expanded="false" title="설명 보기">?</button></th>
+          <th class="num"><button class="sortbtn" data-k="weight_median">중앙값<i class="dir"></i></button><button class="why" data-why="중앙값" aria-expanded="false" title="설명 보기">?</button></th>
+          <th><span class="nosort">분포</span><button class="why" data-why="분포" aria-expanded="false" title="설명 보기">?</button></th>
+          <th class="num"><button class="sortbtn" data-k="weight_iqr">사분위폭<i class="dir"></i></button><button class="why" data-why="사분위폭" aria-expanded="false" title="설명 보기">?</button></th>
+          <th class="num"><button class="sortbtn" data-k="weight_mode">최빈<i class="dir"></i></button><button class="why" data-why="최빈" aria-expanded="false" title="설명 보기">?</button></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="pager"><button class="btn" id="prev">이전</button><span id="pageInfo" aria-live="polite"></span><button class="btn" id="next">다음</button></div>
+  </div>
+</main>
+
+<div id="panelBack" hidden></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-label="작가 상세" hidden></aside>
+<div id="tipBack" hidden></div>
+<div id="tip" role="dialog" hidden></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let DATA = null, sort = { k: 'count', dir: -1 };
+let page=0, filteredCount=0, returnFocus=null, readToken=0; const PAGE_SIZE=100;
+
+
+/* ---------------------------------------------------------------- 읽기 */
+function parseCsv(text) {
+  // artists.csv 를 되읽는다. 따옴표 안의 쉼표까지 다룬다.
+  const rows = [];
+  let cur = [''], q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cur[cur.length - 1] += '"'; i++; }
+      else if (c === '"') q = false;
+      else cur[cur.length - 1] += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') cur.push('');
+    else if (c === '\n') { rows.push(cur); cur = ['']; }
+    else if (c !== '\r') cur[cur.length - 1] += c;
+  }
+  if(q) throw new Error('CSV 따옴표가 닫히지 않았습니다');
+  if (cur.length > 1 || cur[0]) rows.push(cur);
+  if (!rows.length) throw new Error('빈 파일입니다');
+  const head = rows[0].map(h => h.replace(/^﻿/, '').trim());
+  const at = name => head.indexOf(name);
+  const need = at('작가 태그');
+  if (need < 0) throw new Error('작가 통계 CSV 가 아닙니다 ("작가 태그" 칼럼이 없습니다)');
+  const num = (r, n) => { const v = parseFloat(r[at(n)]); return Number.isFinite(v) ? v : null; };
+  const artists = rows.slice(1).filter(r => r[need]).map(r => ({
+    tag: r[need], nai_input: r[at('NAI 입력용')] || r[need],
+    korean: at('한글명') >= 0 ? r[at('한글명')] : null,
+    count: num(r, '등장 횟수'), share: num(r, '비율'),
+    weight_mean: num(r, '평균 가중치'), weight_median: num(r, '중앙값'),
+    weight_p25: num(r, '25%'), weight_p75: num(r, '75%'), weight_iqr: num(r, '사분위폭'),
+    weight_sd: num(r, '표준편차'), weight_min: num(r, '최소'), weight_max: num(r, '최대'),
+    weight_mode: num(r, '최빈 가중치'), weight_mode_rate: num(r, '최빈 비율'),
+    qualified: (r[at('통계 기준 충족')] || '').trim() === 'Y',
+  }));
+  return { format: 'nai5-artist-stats', formatVersion: 1,
+           meta: { title: 'CSV 에서 읽음', source: { name: '(CSV 에는 출처 정보가 없습니다)' },
+                   sample: { artists_found: artists.length } },
+           artists, artistPairs: {} };
+}
+
+function validateData(obj) {
+  if (!obj || !Array.isArray(obj.artists)) throw new Error('작가 통계 파일이 아닙니다');
+  if (obj.format && obj.format !== 'nai5-artist-stats') {
+    throw new Error(`모르는 형식입니다: ${obj.format}`);
+  }
+  if(obj.formatVersion != null && obj.formatVersion !== 1) throw new Error('지원하지 않는 데이터 버전입니다');
+  const numeric=['count','share','weight_mean','weight_median','weight_p25','weight_p75','weight_iqr','weight_sd','weight_min','weight_max','weight_mode','weight_mode_rate'];
+  if(obj.artists.some(a=>!a || typeof a.tag!=='string' || !a.tag.trim() || numeric.some(k=>a[k]!=null && (typeof a[k]!=='number'||!Number.isFinite(a[k]))))) throw new Error('작가 통계 필드 형식이 올바르지 않습니다');
+  if(obj.artists.some(a=>['nai_input','korean'].some(k=>a[k]!=null && typeof a[k]!=='string'))) throw new Error('작가 이름 형식이 올바르지 않습니다');
+  if(obj.artistPairs && (Array.isArray(obj.artistPairs)||typeof obj.artistPairs!=='object'||Object.values(obj.artistPairs).some(ps=>!Array.isArray(ps)||ps.some(p=>!p||typeof p.partner!=='string'||['together','p_given','lift'].some(k=>typeof p[k]!=='number'||!Number.isFinite(p[k])))))) throw new Error('동시출현 정보 형식이 올바르지 않습니다');
+}
+function accept(obj) {
+  validateData(obj);
+  page=0; $('#q').value=''; closePanel(); hideTip();
+  DATA = obj;
+  DATA.artistPairs = DATA.artistPairs || {};
+  render();
+}
+
+async function readFile(file) {
+  const token=++readToken; $('#err').textContent = '';
+  try {
+    const text = (await file.text()).replace(/^\uFEFF/,'');
+    if(token!==readToken)return;
+    const obj=/\.csv$/i.test(file.name) || !text.trim().startsWith('{') ? parseCsv(text) : JSON.parse(text);
+    validateData(obj);
+    await queueStorage(async()=>{
+      if(token!==readToken)return;
+      try{
+        await savedData('put',{name:file.name,data:obj});
+        if(token!==readToken)return;
+        accept(obj); showStorage(file.name,true);
+      }catch(e){
+        if(token!==readToken)return;
+        accept(obj); showStorage(file.name,false);
+        $('#err').textContent='브라우저에 저장하지 못했습니다 · 현재 화면에서만 표시됨 · 원본 파일을 보관해 주세요';
+      }
+    });
+  } catch (e) {
+    if(token===readToken) $('#err').textContent = `${file.name}: ${e.message}`;
+  }
+}
+
+/* ---------------------------------------------------------------- 그리기 */
+/* 요약 숫자 카드를 보일지. 거슬리면 false 로만 바꾸면 된다. */
+const SHOW_SUMMARY = true;
+
+function render() {
+  $('#drop').hidden = true;
+  $('#body').hidden = false;
+  $('#q').hidden = $('#pickWrap').hidden = false;
+  syncTopHeight();
+  // 출처·집계 시점 같은 설명은 일부러 보여주지 않는다. 데이터만 보여준다.
+  // 그런 정보는 JSON 의 meta 에 그대로 남아 있고 share/README.md 에도 적혀 있다.
+  const meta=DATA.meta||{};
+  $('#sourceInfo').textContent=[meta.title,meta.generated && '집계 '+meta.generated,meta.source?.name,meta.license].filter(Boolean).join(' · ');
+  const sm = meta.sample || {};
+  const cards = SHOW_SUMMARY ? [
+    ['그림', sm.images, '그림'],
+    ['작가를 찾은 그림', sm.images_with_artist, '작가를찾은그림'],
+    ['작가', sm.artists_found ?? DATA.artists.length, '작가'],
+    ['작가 쌍', sm.artist_pairs_found, '작가쌍'],
+    ['그림당 작가 평균', sm.artists_per_image_mean, '그림당작가평균'],
+  ].filter(([, v]) => v !== undefined && v !== null) : [];
+  $('#cards').hidden = !cards.length;
+  $('#cards').innerHTML = cards.map(([k, v, why]) =>
+    `<div class="stat"><b>${typeof v === 'number' ? v.toLocaleString() : esc(v)}</b>
+     <span>${esc(k)}${whyBtn(why)}</span></div>`).join('');
+  renderRows();
+  applyHash();
+}
+
+/* 주소 끝에 #artist=이름 을 붙이면 그 작가로 바로 갑니다. 링크로 나눌 때 씁니다. */
+function applyHash() {
+  const m = /^#artist=(.+)$/.exec(location.hash || '');
+  if (!m || !DATA) return;
+  let tag; try{tag=decodeURIComponent(m[1]);}catch{return;}
+  const row = document.getElementById('row-' + encodeURIComponent(tag));
+  if (!row) {openArtist(tag);return;}
+  row.scrollIntoView({ block: 'center' });
+  openArtist(tag);
+}
+addEventListener('hashchange', applyHash);
+
+function renderRows() {
+  const q = $('#q').value.trim().toLowerCase();
+  let list = DATA.artists.filter(a => !q ||
+    a.tag.toLowerCase().includes(q) || (a.nai_input || '').toLowerCase().includes(q) || (a.korean || '').toLowerCase().includes(q));
+  const k = sort.k;
+  $('#mobileSort').value=k; $('#sortDirection').textContent=sort.dir<0?'내림차순':'오름차순';
+  list = [...list];
+  if (k === 'tag') list.sort((a, b) => a.tag.localeCompare(b.tag) * sort.dir);
+  else if (k === 'rank' && sort.dir < 0) list.reverse();
+  else if (k !== 'rank') list.sort((a, b) => ((a[k] ?? -99) - (b[k] ?? -99)) * sort.dir);
+  $('#count').textContent = `${list.length.toLocaleString()}명` +
+    (q ? ` · "${$('#q').value}" 검색` : '');
+  document.querySelectorAll('#tbl thead .sortbtn').forEach(b => {
+    const on = b.dataset.k === sort.k;
+    b.setAttribute('aria-sort', on ? (sort.dir < 0 ? 'descending' : 'ascending') : 'none');
+    b.querySelector('.dir').textContent = on ? (sort.dir < 0 ? ' ▾' : ' ▴') : '';
+  });
+
+  const lo = Math.min(...DATA.artists.map(a => a.weight_min ?? 0), 0);
+  const hi = Math.max(...DATA.artists.map(a => a.weight_max ?? 1), 1);
+  const pct = v => ((v - lo) / (hi - lo || 1)) * 100;
+
+  filteredCount=list.length; page=Math.min(page,Math.max(0,Math.ceil(list.length/PAGE_SIZE)-1));
+  $('#prev').disabled=page===0; $('#next').disabled=(page+1)*PAGE_SIZE>=list.length;
+  $('#pageInfo').textContent=list.length ? `${page+1} / ${Math.ceil(list.length/PAGE_SIZE)} 페이지 · ${list.length.toLocaleString()}명` : '검색 결과 없음';
+  $('#rows').innerHTML = list.slice(page*PAGE_SIZE, (page+1)*PAGE_SIZE).map((a, i) => {
+    const has = a.weight_p25 != null && a.weight_p75 != null;
+    const bar = a.weight_min == null ? '' :
+      `<div class="bar" title="${a.weight_min} ~ ${a.weight_max}">
+         ${has ? `<i style="left:${pct(a.weight_p25)}%;width:${
+           Math.max(1.5, pct(a.weight_p75) - pct(a.weight_p25))}%"></i>` : ''}
+         <u style="left:${pct(a.weight_median ?? a.weight_mean)}%"></u></div>`;
+    return `<tr data-tag="${esc(a.tag)}" id="row-${encodeURIComponent(a.tag)}">
+      <td class="num muted">${page*PAGE_SIZE + i + 1}</td>
+      <td><button class="tag" data-artist="${esc(a.tag)}">${esc(a.nai_input || a.tag)}</button>
+        ${a.korean ? `<div class="tiny muted">${esc(a.korean)}</div>` : ''}
+        ${a.qualified === false ? '<div class="tiny muted">표본 적음</div>' : ''}</td>
+      <td class="num">${(a.count ?? '').toLocaleString?.() ?? a.count}</td>
+      <td class="num">${a.share != null ? (a.share * 100).toFixed(1) + '%' : ''}</td>
+      <td class="num">${a.weight_mean ?? ''}</td>
+      <td class="num">${a.weight_median ?? ''}</td>
+      <td>${bar}<span class="tiny muted">${a.weight_min ?? ''}–${a.weight_max ?? ''}</span></td>
+      <td class="num">${a.weight_iqr ?? ''}</td>
+      <td class="num">${a.weight_mode ?? ''}${
+        a.weight_mode_rate != null ? ` <span class="tiny muted">${
+          Math.round(a.weight_mode_rate * 100)}%</span>` : ''}</td>
+    </tr>`;
+  }).join('');
+  const labels=['순번','작가','등장','비율','평균 가중치','중앙값','분포','사분위폭','최빈'];
+  $ ('#rows').querySelectorAll('tr').forEach(row=>[...row.cells].forEach((cell,i)=>cell.dataset.label=labels[i]));
+}
+
+function openArtist(tag) {
+  const a = DATA.artists.find(x => x.tag === tag);
+  if (!a) return;
+  if($('#panel').hidden) returnFocus=document.activeElement;
+  const ps = Object.hasOwn(DATA.artistPairs,tag) ? DATA.artistPairs[tag] : [];
+  $('#panel').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:start">
+      <div><h3>${esc(a.nai_input || a.tag)}</h3>
+        <div class="tiny muted"><code>${esc(a.tag)}</code>${
+          a.korean ? ' · ' + esc(a.korean) : ''}</div></div>
+      <button class="btn" id="px" aria-label="상세 패널 닫기">닫기</button>
+    </div>
+    <div class="cards" style="margin-top:12px">
+      <div class="stat"><b>${(a.count ?? 0).toLocaleString()}</b><span>등장</span></div>
+      <div class="stat"><b>${a.weight_median ?? '—'}</b><span>가중치 중앙값</span></div>
+      <div class="stat"><b>${a.weight_p25 ?? '—'}~${a.weight_p75 ?? '—'}</b><span>가운데 절반</span></div>
+    </div>
+    <p class="tiny muted">평균 ${a.weight_mean ?? '—'} · 표준편차 ${a.weight_sd ?? '—'} ·
+      범위 ${a.weight_min ?? '—'}~${a.weight_max ?? '—'}${
+      a.weight_mode != null ? ` · 사분위폭 ${a.weight_iqr ?? '—'} · 최빈 ${a.weight_mode}${a.weight_mode_rate!=null?' ('+Math.round(a.weight_mode_rate*100)+'%)':''}` : ''}</p>
+    <div class="sect">함께 쓰인 작가 ${ps.length}명</div>
+    ${ps.length ? `<div class="tablescroll" style="max-height:52vh"><table>
+        <thead><tr><th><span class="nosort">작가</span></th>
+          <th class="num"><span class="nosort">함께</span>${whyBtn('함께')}</th>
+          <th class="num"><span class="nosort">P(B|A)</span>${whyBtn('PBA')}</th>
+          <th class="num"><span class="nosort">리프트</span>${whyBtn('리프트')}</th></tr></thead>
+        <tbody>${ps.map(d => `<tr><td><button class="tag" data-artist="${esc(d.partner)}">${esc(d.partner)}</button></td>
+          <td class="num">${d.together}</td>
+          <td class="num">${(d.p_given * 100).toFixed(1)}%</td>
+          <td class="num">${d.lift}</td></tr>`).join('')}</tbody></table></div>
+        <p class="tiny muted">리프트는 전체 평균 대비 몇 배로 함께 나오는지입니다.
+          1이면 무관. 함께 나온 수가 작으면 우연일 수 있습니다.</p>`
+      : '<p class="muted tiny">동시출현 자료가 없습니다. (CSV 만 읽었거나 표본이 적습니다)</p>'}`;
+  $('#panel').querySelectorAll('tbody tr').forEach(row=>[...row.cells].forEach((cell,i)=>cell.dataset.label=['작가','함께 등장','P(B|A)','리프트'][i]));
+  $('#panel').hidden = false; $('#panelBack').hidden=false;
+  $('#px').onclick = closePanel; $('#px').focus();
+}
+
+/* ---------------------------------------------------------------- 배선 */
+const drop = $('#drop');
+for (const t of ['dragenter', 'dragover']) {
+  document.addEventListener(t, e => { e.preventDefault(); drop.classList.add('hot'); });
+}
+for (const t of ['dragleave', 'drop']) {
+  document.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('hot'); });
+}
+document.addEventListener('drop', e => {
+  const f = e.dataTransfer?.files?.[0];
+  if (f) readFile(f);
+});
+$('#pick').onchange = e => e.target.files[0] && readFile(e.target.files[0]);
+$('#pick2').onchange = e => e.target.files[0] && readFile(e.target.files[0]);
+$('#mobileSort').onchange=e=>{sort={k:e.target.value,dir:['tag','rank'].includes(e.target.value)?1:-1};page=0;renderRows();};
+$('#sortDirection').onclick=()=>{sort.dir*=-1;page=0;renderRows();};
+$('#q').oninput = () => {page=0;renderRows();};
+document.addEventListener('click', e => {
+  const t = e.target.closest('.tag');
+  if (t && DATA) openArtist(t.dataset.artist);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanel();
+});
+/* 정렬은 이름 단추에만, 설명은 돋보기에만 붙는다.
+   예전에는 정렬을 th 에 걸어 두어서 돋보기를 눌러도 그 클릭이 th 까지 올라가
+   정렬이 함께 바뀌었다. 둘을 형제 단추로 떼어 놓아 섞이지 않게 한다. */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('#tbl thead .sortbtn');
+  if (!btn) return;
+  const k = btn.dataset.k;
+  page=0; sort = { k, dir: sort.k === k ? -sort.dir : (k === 'tag' ? 1 : -1) };
+  renderRows();
+});
+/* ---------------------------------------------------------- 용어 설명 */
+/* 통계를 모르는 사람이 읽어도 알 수 있게 쓴다. 수식은 쓰지 않는다. */
+const TERMS = {
+  등장: ['등장', '이 작가가 몇 장의 그림에 들어갔는지입니다. 한 그림에 같은 작가가 '
+        + '여러 번 적혀 있어도 한 번으로 셉니다.'],
+  비율: ['비율', '전체 그림 중 이 작가가 들어간 그림의 비율입니다. 10%면 열 장 중 한 장에 '
+        + '이 작가가 쓰였다는 뜻입니다.'],
+  평균: ['평균 가중치', '이 작가를 보통 얼마의 세기로 넣는지입니다. 다만 아주 크거나 작은 '
+        + '값 하나에 쉽게 휘둘립니다. 옆의 중앙값을 함께 보세요.'],
+  중앙값: ['중앙값', '쓰인 가중치를 작은 것부터 줄 세웠을 때 한가운데 있는 값입니다. '
+        + '극단적인 값에 흔들리지 않아 평균보다 믿을 만합니다. '
+        + '<b style="display:inline">해당 표본의 사용 경향이며, 최적 가중치를 보장하지 않습니다.</b>'],
+  분포: ['분포', '가로 막대는 이 작가가 쓰인 가중치의 범위입니다. '
+        + '옅은 띠가 가운데 절반(25%~75%)이 들어가는 구간이고, 세로 선이 중앙값입니다. '
+        + '띠가 좁으면 다들 비슷한 세기로 쓰고, 넓으면 사람마다 다르게 씁니다.'],
+  사분위폭: ['사분위폭', '사람마다 이 작가를 얼마나 다른 세기로 쓰는지입니다. '
+        + '0에 가까우면 다들 비슷하게 쓰고, 크면 취향껏 조절해 씁니다. '
+        + '위의 옅은 띠의 너비와 같은 값입니다.'],
+  최빈: ['최빈 가중치', '가장 자주 쓰인 값입니다. 옆의 %는 그 값이 차지하는 비율이고, '
+        + '높을수록 사실상 정해진 값이 있다는 뜻입니다.'],
+  작가쌍: ['작가 쌍', '두 작가가 <b style="display:inline">같은 그림에 함께 쓰인 짝</b>의 '
+        + '수입니다. 한 그림에 작가 셋이 들어갔다면 짝은 3개(A-B, A-C, B-C)가 됩니다. '
+        + '어떤 작가끼리 잘 섞여 쓰이는지 보는 바탕이 되는 숫자입니다.'],
+  그림: ['그림', '통계에 들어간 그림의 장수입니다.'],
+  작가를찾은그림: ['작가를 찾은 그림', '프롬프트에서 작가 태그를 하나라도 찾아낸 그림의 '
+        + '수입니다. 작가 없이 구도나 화풍만 적은 그림은 여기서 빠집니다.'],
+  작가: ['작가', '찾아낸 서로 다른 작가 태그의 수입니다.'],
+  그림당작가평균: ['그림당 작가 평균', '그림 한 장에 작가를 평균 몇 명이나 섞어 쓰는지입니다.'],
+  함께: ['함께', '이 두 작가가 같은 그림에 함께 들어간 횟수입니다.'],
+  PBA: ['P(B|A)', '이 작가를 쓴 그림 중에서 상대 작가가 같이 들어간 비율입니다. '
+        + '70%라면 이 작가를 쓸 때 열에 일곱은 저 작가를 같이 쓴다는 뜻입니다.'],
+  리프트: ['리프트', '우연보다 얼마나 더 자주 함께 나오는지입니다. 1이면 관계 없음, '
+        + '2면 평균의 두 배로 붙어 다닙니다. 많이 쓰이는 작가는 아무하고나 자주 만나서 '
+        + '이 값이 1 근처로 눌립니다. 높을수록 이 표본에서 함께 쓰이는 경향이 강합니다. 조합의 품질이나 인과관계를 뜻하지는 않습니다.'],
+};
+
+function whyBtn(key) {
+  return `<button class="why" data-why="${key}" aria-expanded="false"
+    aria-label="설명 보기" title="설명 보기">?</button>`;
+}
+
+function showTip(key, anchor) {
+  const t = TERMS[key];
+  if (!t) return;
+  const tip = $('#tip');
+  tip.innerHTML = `<b>${esc(t[0])}</b>${t[1]}`;
+  tip.hidden = false;
+  $('#tipBack').hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+  let y = r.bottom + 8;
+  if (y + h > innerHeight - 8) y = Math.max(8, r.top - h - 8);
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  document.querySelectorAll('.why[aria-expanded="true"]').forEach(b =>
+    b.setAttribute('aria-expanded', 'false'));
+  anchor.setAttribute('aria-expanded', 'true');
+}
+function hideTip() {
+  $('#tip').hidden = true; $('#tipBack').hidden = true;
+  document.querySelectorAll('.why[aria-expanded="true"]').forEach(b =>
+    b.setAttribute('aria-expanded', 'false'));
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.why');
+  if (b) { e.stopPropagation(); 
+    if (b.getAttribute('aria-expanded') === 'true') hideTip(); else showTip(b.dataset.why, b);
+    return; }
+  if (!e.target.closest('#tip')) hideTip();
+});
+addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
+addEventListener('scroll', hideTip, true);
+
+/* 위 막대의 실제 높이를 재서 머리글이 붙을 자리를 정한다. */
+function syncTopHeight() {
+  const h = document.querySelector('.top')?.offsetHeight || 52;
+  document.documentElement.style.setProperty('--topH', h + 'px');
+}
+syncTopHeight();
+addEventListener('resize', syncTopHeight);
+if (window.ResizeObserver) new ResizeObserver(syncTopHeight).observe(document.querySelector('.top'));
+
+function closePanel(){ $('#panel').hidden=true; $('#panelBack').hidden=true; if(returnFocus?.isConnected)returnFocus.focus(); returnFocus=null; }
+$('#panelBack').onclick=closePanel;
+$('#prev').onclick=()=>{page--;renderRows();$('.tablescroll').scrollTop=0;};
+$('#next').onclick=()=>{page++;renderRows();$('.tablescroll').scrollTop=0;};
+for(const id of ['pick','pick2']) $(('#'+id)).onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)readFile(f);};
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Tab'||$('#panel').hidden)return;
+ const nodes=[...$('#panel').querySelectorAll('button,input,a[href]')]; const first=nodes[0],last=nodes.at(-1);
+ if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+ else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+});
+$('#mobileTerms').innerHTML=['등장','비율','평균','중앙값','분포','사분위폭','최빈','함께','PBA','리프트'].map(k=>`<span>${esc(TERMS[k][0])}${whyBtn(k)}</span>`).join('');
+
+let storageQueue=Promise.resolve();
+function queueStorage(action){const result=storageQueue.then(action);storageQueue=result.catch(()=>{});return result;}
+const statsDB=new Promise((resolve,reject)=>{
+ const req=indexedDB.open('fluff_artist_stats_v1:'+new URL('./',location.href).pathname,1);
+ req.onupgradeneeded=()=>req.result.createObjectStore('current');
+ req.onsuccess=()=>{req.result.onversionchange=()=>req.result.close();resolve(req.result);};
+ req.onerror=()=>reject(req.error);
+ req.onblocked=()=>reject(new Error('저장소가 다른 창에서 사용 중입니다'));
+});
+statsDB.catch(()=>{});
+async function savedData(action,value){const db=await statsDB;return new Promise((resolve,reject)=>{
+ const tx=db.transaction('current',action==='get'?'readonly':'readwrite'),store=tx.objectStore('current');let req;
+ if(action==='get')req=store.get('last');
+ else if(action==='put')req=store.put(value,'last');
+ else req=store.delete('last');
+ tx.oncomplete=()=>resolve(req.result);tx.onabort=()=>reject(tx.error||new Error('저장 실패'));tx.onerror=()=>{};
+});}
+function showStorage(name,saved){$('#storageStatus').textContent=name+' · '+(saved?'이 브라우저에 저장됨':'이번에만 표시됨');$('#clearStored').hidden=false;}
+$('#clearStored').onclick=async()=>{
+ if(!confirm('이 브라우저에 저장한 작가 통계 데이터를 삭제할까요? 원본 파일과 Artist Tags + 보관함은 유지됩니다.'))return;
+ const token=++readToken;
+ try{await queueStorage(async()=>{await savedData('delete');if(token!==readToken)return;closePanel();hideTip();DATA=null;$('#body').hidden=true;$('#drop').hidden=false;$('#q').hidden=$('#pickWrap').hidden=true;$('#q').value='';$('#clearStored').hidden=true;$('#err').textContent='';$('#storageStatus').textContent='내 통계 파일을 불러오세요';});}
+ catch(e){$('#err').textContent='저장 데이터 삭제 실패 · 다시 시도해 주세요';}
+};
+(async()=>{const token=readToken;try{const saved=await savedData('get');if(token!==readToken||!saved)return;accept(saved.data);showStorage(saved.name,true);}catch(e){if(token===readToken)$('#err').textContent='저장 데이터를 복원하지 못했습니다 · 파일을 직접 불러와 주세요';}})();
+
+window.__viewer = { accept, parseCsv, syncTopHeight, applyHash,
+                    get data() { return DATA; } };
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#ececf0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="fluff" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+  <link rel="stylesheet" href="./artist-plus.css" />
+  <title>fluff</title>
+  <style>
+    :root{color-scheme:light;
+      --bg:#ececf0; --panel:rgba(255,255,255,.76); --panel-strong:#fff;
+      --text:#1d1d1f; --muted:#77777d; --line:rgba(60,60,67,.16);
+      --accent:#0a84ff; --danger:#ff453a; --shadow:0 12px 34px rgba(0,0,0,.08);
+      --radius:18px; --safe-top:env(safe-area-inset-top); --safe-bottom:env(safe-area-inset-bottom);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{touch-action:manipulation}
+    html{background:var(--bg)}
+    body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif}
+    button,input,textarea{font:inherit}
+    button{color:inherit}
+    .app{min-height:100vh;padding:calc(14px + var(--safe-top)) 14px calc(24px + var(--safe-bottom));max-width:780px;margin:0 auto}
+    .topbar{position:sticky;top:0;z-index:20;padding:0 0 12px;background:linear-gradient(var(--bg) 70%,transparent)}
+    .windowbar{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 10px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em;font-size:16px}
+    .dots{display:flex;gap:6px}.dot{width:10px;height:10px;border-radius:50%}.r{background:#ff5f57}.y{background:#febc2e}.g{background:#28c840}
+    .tiny{font-size:12px;color:var(--muted)}
+    .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;background:rgba(118,118,128,.14);border-radius:12px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .tab{border:0;background:transparent;border-radius:9px;padding:10px 8px;font-weight:700;font-size:14px;cursor:pointer}
+    .tab.active{background:var(--panel-strong);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+    .view{display:none}.view.active{display:block}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);overflow:hidden}
+    .section{padding:16px}.section+.section{border-top:1px solid var(--line)}
+    .label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+    textarea{width:100%;min-height:190px;resize:vertical;border:0;outline:0;background:transparent;color:var(--text);font-size:16px;line-height:1.6;padding:0}
+    textarea::placeholder,input::placeholder{color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .btn{border:0;border-radius:11px;background:rgba(118,118,128,.16);padding:10px 14px;font-weight:700;cursor:pointer;min-height:40px}
+    .btn.primary{background:var(--accent);color:#fff}.btn.danger{color:var(--danger)}
+    .btn:active,.kaomoji:active{transform:scale(.98)}
+    .status{height:20px;margin-top:8px;font-size:12px;color:var(--muted)}
+    .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+    .toolbar input{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:11px 12px;outline:0}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    @media(min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .kaomoji{position:relative;min-height:64px;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:16px 10px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;overflow-wrap:anywhere;font-size:17px}
+    .kaomoji .controls{display:none;position:absolute;inset:auto 5px 5px 5px;gap:4px;justify-content:flex-end}
+    .editing .kaomoji{padding-bottom:38px}.editing .kaomoji .controls{display:flex}
+    .mini{border:0;background:rgba(118,118,128,.18);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:12px}
+    .mini.del{color:var(--danger)}
+    .empty{grid-column:1/-1;padding:34px 12px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+    .footnote{margin:12px 4px 0;color:var(--muted);font-size:12px;line-height:1.5}
+    dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel-strong);color:var(--text);padding:0;max-width:min(92vw,420px);box-shadow:0 22px 70px rgba(0,0,0,.28)}
+    dialog::backdrop{background:rgba(0,0,0,.32);backdrop-filter:blur(3px)}
+    .modal{padding:18px}.modal h2{font-size:18px;margin:0 0 8px}.modal p{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 16px}
+    .modal .actions{justify-content:flex-end}
+    #fileInput{display:none}
+    .toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%) translateY(14px);background:rgba(30,30,32,.9);color:white;padding:10px 14px;border-radius:999px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.18s;z-index:100;backdrop-filter:blur(16px)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    input,select,textarea{font-size:16px}
+    .tab{min-height:44px;font-size:13px;padding:10px 3px}
+    #artistFrame,#asciiFrame{display:block;width:100%;height:calc(100dvh - 140px);min-height:480px;border:0;border-radius:18px;background:var(--bg)}
+    @media(max-width:380px){.app{padding-left:8px;padding-right:8px}.tab{font-size:12px}}
+    .char-count{font-size:12px;color:var(--muted);margin:0 0 12px;font-variant-numeric:tabular-nums}
+    .app:has(#ascii.active){max-width:1100px}
+    @media(max-width:759px){.tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-padding:4px;-webkit-overflow-scrolling:touch}.tabs .tab{flex:0 0 auto;min-width:100px;padding:10px 14px;white-space:nowrap}.tabs .tab:last-child{grid-column:auto}#artistFrame,#asciiFrame{height:calc(100dvh - 140px);min-height:400px}}
+    .brand{letter-spacing:.01em;font-size:20px}.fluff-mark{width:28px;height:28px;border-radius:8px}.app{max-width:1100px}.tabs .tab{flex:1!important}
+  </style>
+</head>
+<body><main class="app"><div class="topbar"><div class="windowbar"><div class="brand"><img class="fluff-mark" src="./icon-192.png" alt="">fluff</div><span class="tiny">artist collection</span></div><nav class="tabs" aria-label="작가 도구 탭"><button class="tab active" data-tab="artists">Artist Tags</button><button class="tab" data-tab="artistPlus">Artist Tags +</button></nav></div>    <section id="artists" class="view active" aria-label="작가 태그 통계">
+      <iframe id="artistFrame" src="./artist-tags.html" title="작가 태그 통계 뷰어"></iframe>
+    </section>
+    <section id="artistPlus" class="view" aria-label="작가 태그 이미지 보관함">
+      <div class="plus-head"><div><h1>Artist Tags +</h1><p class="plus-sub">이미지로 모아 보는 나만의 작가 태그</p></div><div class="plus-actions"><button class="btn primary" id="plusAdd" disabled>새 작가 등록</button><button class="btn" id="plusExport" disabled>전체 내보내기</button><button class="btn" id="plusImport" disabled>전체 불러오기</button><input type="file" id="plusBackupFile" accept="application/json,.json" hidden></div></div>
+      <div class="plus-versions" role="tablist" aria-label="모델 버전"><button role="tab" aria-selected="true" data-plus-version="4.5">4.5</button><button role="tab" aria-selected="false" data-plus-version="5">5</button></div>
+      <input id="plusSearch" class="plus-search" type="search" placeholder="작가 태그 검색" aria-label="보관함 작가 태그 검색">
+      <div class="plus-summary"><span id="plusCount" aria-live="polite">불러오는 중…</span><span>이미지를 눌러 크게 보기</span></div>
+      <p id="plusError" class="plus-error" role="alert"></p><div id="plusGrid" class="plus-grid"></div>
+      <p class="plus-sub">이미지와 태그는 이 브라우저에 저장됨 · 전체 내보내기에 4.5와 5의 이미지·태그가 함께 포함됨 · 다른 기기로 이동하거나 브라우저 데이터를 지우기 전 백업 필요</p>
+    </section>
+</main>  <dialog id="plusEditor" class="plus-dialog"><form id="plusForm" class="plus-form"><h2 id="plusEditorTitle">새 작가 등록</h2><label class="plus-field" for="plusVersion">모델 버전</label><select id="plusVersion"><option>4.5</option><option>5</option></select><label class="plus-field" for="plusTag">작가 태그</label><textarea id="plusTag" required maxlength="2000" placeholder="예: artist:작가이름"></textarea><label class="plus-field">참고 이미지</label><label class="btn plus-pick" for="plusImages">이미지 추가<input id="plusImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple hidden></label><p class="plus-sub">여러 장 선택 가능 · PNG, JPG, WebP, GIF, AVIF · 장당 20MB 이하<br>첫 이미지가 카드의 대표 이미지임</p><div id="plusThumbs" class="plus-thumbs"></div><p id="plusEditError" class="plus-error" role="alert"></p><div class="actions"><button class="btn" type="button" id="plusCancel">취소</button><button class="btn primary" id="plusSave" type="submit">저장</button></div></form></dialog>
+  <dialog id="plusImportDialog" class="plus-dialog"><div class="plus-form"><h2>보관함 불러오기</h2><p id="plusImportSummary" class="plus-sub"></p><p class="plus-sub">기존 목록에 추가하면 이미 등록된 카드는 유지됨<br>전체 교체는 4.5와 5의 현재 목록 모두를 백업 내용으로 바꿈</p><div class="actions"><button class="btn" id="plusImportCancel">취소</button><button class="btn" id="plusMerge">기존 목록에 추가</button><button class="btn danger" id="plusReplace">전체 교체</button></div></div></dialog>
+  <dialog id="plusViewer" class="plus-lightbox"><p id="plusViewerTag"></p><img id="plusViewerImage" alt="작가 참고 이미지"><div class="plus-actions"><button class="btn" id="plusViewerPrev" aria-label="이전 이미지">이전</button><span id="plusViewerCount"></span><button class="btn" id="plusViewerNext" aria-label="다음 이미지">다음</button><button class="btn" id="plusViewerClose">닫기</button></div></dialog>
+
+<div class="toast" id="toast" role="status"></div><script>
+document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===btn.dataset.tab));});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+</script><script src="./artist-plus.js"></script></body></html>
