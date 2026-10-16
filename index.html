@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#ececf0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="fluff" />
+  <meta name="apple-mobile-web-app-title" content="FLUFF" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
-  <link rel="stylesheet" href="./artist-plus.css" />
-  <title>fluff</title>
+  <link rel="stylesheet" href="./artist-plus.css" /><link rel="stylesheet" href="./fashion.css" />
+  <title>FLUFF</title>
   <style>
     :root{color-scheme:light;
       --bg:#ececf0; --panel:rgba(255,255,255,.76); --panel-strong:#fff;
@@ -31,7 +31,7 @@
     .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em;font-size:16px}
     .dots{display:flex;gap:6px}.dot{width:10px;height:10px;border-radius:50%}.r{background:#ff5f57}.y{background:#febc2e}.g{background:#28c840}
     .tiny{font-size:12px;color:var(--muted)}
-    .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;background:rgba(118,118,128,.14);border-radius:12px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;background:rgba(118,118,128,.14);border-radius:12px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
     .tab{border:0;background:transparent;border-radius:9px;padding:10px 8px;font-weight:700;font-size:14px;cursor:pointer}
     .tab.active{background:var(--panel-strong);box-shadow:0 1px 4px rgba(0,0,0,.12)}
     .view{display:none}.view.active{display:block}
@@ -70,10 +70,10 @@
     .char-count{font-size:12px;color:var(--muted);margin:0 0 12px;font-variant-numeric:tabular-nums}
     .app:has(#ascii.active){max-width:1100px}
     @media(max-width:759px){.tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-padding:4px;-webkit-overflow-scrolling:touch}.tabs .tab{flex:0 0 auto;min-width:100px;padding:10px 14px;white-space:nowrap}.tabs .tab:last-child{grid-column:auto}#artistFrame,#asciiFrame{height:calc(100dvh - 140px);min-height:400px}}
-    .brand{letter-spacing:.01em;font-size:20px}.fluff-mark{width:28px;height:28px;border-radius:8px}.app{max-width:1100px}.tabs .tab{flex:1!important}
+    .brand{letter-spacing:.08em;font-size:16px}.fluff-mark{width:28px;height:28px;border-radius:8px}.app{max-width:1100px}.tabs .tab{flex:1!important}
   </style>
 </head>
-<body><main class="app"><div class="topbar"><div class="windowbar"><div class="brand"><img class="fluff-mark" src="./icon-192.png" alt="">fluff</div><span class="tiny">artist collection</span></div><nav class="tabs" aria-label="작가 도구 탭"><button class="tab active" data-tab="artists">Artist Tags</button><button class="tab" data-tab="artistPlus">Artist Tags +</button></nav></div>    <section id="artists" class="view active" aria-label="작가 태그 통계">
+<body><main class="app"><div class="topbar"><div class="windowbar"><div class="brand"><span class="dots" aria-hidden="true"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span>FLUFF</div><span class="tiny">personal collection</span></div><nav class="tabs" aria-label="도구 탭"><button class="tab active" data-tab="artists">Artist Tags</button><button class="tab" data-tab="artistPlus">Artist Tags +</button><button class="tab" data-tab="fashion">Fashion</button></nav></div>    <section id="artists" class="view active" aria-label="작가 태그 통계">
       <iframe id="artistFrame" src="./artist-tags.html" title="작가 태그 통계 뷰어"></iframe>
     </section>
     <section id="artistPlus" class="view" aria-label="작가 태그 이미지 보관함">
@@ -84,11 +84,11 @@
       <p id="plusError" class="plus-error" role="alert"></p><div id="plusGrid" class="plus-grid"></div>
       <p class="plus-sub">이미지와 태그는 이 브라우저에 저장됨 · 전체 내보내기에 4.5와 5의 이미지·태그가 함께 포함됨 · 다른 기기로 이동하거나 브라우저 데이터를 지우기 전 백업 필요</p>
     </section>
-</main>  <dialog id="plusEditor" class="plus-dialog"><form id="plusForm" class="plus-form"><h2 id="plusEditorTitle">새 작가 등록</h2><label class="plus-field" for="plusVersion">모델 버전</label><select id="plusVersion"><option>4.5</option><option>5</option></select><label class="plus-field" for="plusTag">작가 태그</label><textarea id="plusTag" required maxlength="2000" placeholder="예: artist:작가이름"></textarea><label class="plus-field">참고 이미지</label><label class="btn plus-pick" for="plusImages">이미지 추가<input id="plusImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple hidden></label><p class="plus-sub">여러 장 선택 가능 · PNG, JPG, WebP, GIF, AVIF · 장당 20MB 이하<br>첫 이미지가 카드의 대표 이미지임</p><div id="plusThumbs" class="plus-thumbs"></div><p id="plusEditError" class="plus-error" role="alert"></p><div class="actions"><button class="btn" type="button" id="plusCancel">취소</button><button class="btn primary" id="plusSave" type="submit">저장</button></div></form></dialog>
+<section id="fashion" class="view" aria-label="패션 태그 보관함"><div class="fashion-head"><div><h1>Fashion</h1><p class="fashion-sub">이미지를 두 번 눌러 태그 복사 · 길게 누르거나 우클릭하면 편집</p></div><div class="fashion-actions"><button class="btn primary" id="fashionAdd" disabled>새 패션 등록</button><button class="btn" id="fashionExport" disabled>전체 내보내기</button><button class="btn" id="fashionImport" disabled>전체 불러오기</button><input type="file" id="fashionBackupFile" accept="application/json,.json" hidden></div></div><div class="fashion-versions" role="tablist" aria-label="패션 카테고리"><button role="tab" aria-selected="true" data-fashion-version="여성">여성</button><button role="tab" aria-selected="false" data-fashion-version="남성">남성</button><button role="tab" aria-selected="false" data-fashion-version="공용">공용</button><button role="tab" aria-selected="false" data-fashion-version="기타">기타</button></div><input id="fashionSearch" class="fashion-search" type="search" placeholder="패션 태그 검색" aria-label="패션 태그 검색"><div class="fashion-summary"><span id="fashionCount" aria-live="polite">불러오는 중…</span></div><p id="fashionError" class="fashion-error" role="alert"></p><div id="fashionGrid" class="fashion-grid"></div><p class="fashion-sub">이미지·태그는 이 브라우저에 저장됨 · 전체 내보내기에 네 카테고리가 모두 포함됨</p></section></main>  <dialog id="plusEditor" class="plus-dialog"><form id="plusForm" class="plus-form"><h2 id="plusEditorTitle">새 작가 등록</h2><label class="plus-field" for="plusVersion">모델 버전</label><select id="plusVersion"><option>4.5</option><option>5</option></select><label class="plus-field" for="plusTag">작가 태그</label><textarea id="plusTag" required maxlength="2000" placeholder="예: artist:작가이름"></textarea><label class="plus-field">참고 이미지</label><label class="btn plus-pick" for="plusImages">이미지 추가<input id="plusImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple hidden></label><p class="plus-sub">여러 장 선택 가능 · PNG, JPG, WebP, GIF, AVIF · 장당 20MB 이하<br>첫 이미지가 카드의 대표 이미지임</p><div id="plusThumbs" class="plus-thumbs"></div><p id="plusEditError" class="plus-error" role="alert"></p><div class="actions"><button class="btn" type="button" id="plusCancel">취소</button><button class="btn primary" id="plusSave" type="submit">저장</button></div></form></dialog>
   <dialog id="plusImportDialog" class="plus-dialog"><div class="plus-form"><h2>보관함 불러오기</h2><p id="plusImportSummary" class="plus-sub"></p><p class="plus-sub">기존 목록에 추가하면 이미 등록된 카드는 유지됨<br>전체 교체는 4.5와 5의 현재 목록 모두를 백업 내용으로 바꿈</p><div class="actions"><button class="btn" id="plusImportCancel">취소</button><button class="btn" id="plusMerge">기존 목록에 추가</button><button class="btn danger" id="plusReplace">전체 교체</button></div></div></dialog>
   <dialog id="plusViewer" class="plus-lightbox"><p id="plusViewerTag"></p><img id="plusViewerImage" alt="작가 참고 이미지"><div class="plus-actions"><button class="btn" id="plusViewerPrev" aria-label="이전 이미지">이전</button><span id="plusViewerCount"></span><button class="btn" id="plusViewerNext" aria-label="다음 이미지">다음</button><button class="btn" id="plusViewerClose">닫기</button></div></dialog>
 
-<div class="toast" id="toast" role="status"></div><script>
+<dialog id="fashionEditor" class="fashion-dialog"><form id="fashionForm" class="fashion-form"><h2 id="fashionEditorTitle">새 패션 등록</h2><div class="fashion-editor-grid"><div><label class="fashion-field" for="fashionVersion">카테고리</label><select id="fashionVersion"><option>여성</option><option>남성</option><option>공용</option><option>기타</option></select><label class="fashion-field" for="fashionTag">패션 태그</label><textarea id="fashionTag" required maxlength="2000" placeholder="예: white shirt, pleated skirt"></textarea></div><div class="fashion-image-side"><span class="fashion-field">이미지</span><label class="btn fashion-pick" for="fashionImages">이미지 등록 / 교체<input id="fashionImages" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden></label><div id="fashionThumbs" class="fashion-thumbs"></div><p class="fashion-sub">이미지 1장 · 최대 20MB<br>카드는 정방형으로 표시하며 원본 파일은 그대로 저장함</p></div></div><p id="fashionEditError" class="fashion-error" role="alert"></p><div class="actions"><button class="btn" type="button" id="fashionCancel">취소</button><button class="btn primary" id="fashionSave" type="submit">저장</button></div></form></dialog><dialog id="fashionImportDialog" class="fashion-dialog"><div class="fashion-form"><h2>Fashion 불러오기</h2><p id="fashionImportSummary" class="fashion-sub"></p><p class="fashion-sub">추가는 이미 등록된 카드를 유지함 · 전체 교체는 네 카테고리 모두를 백업 내용으로 바꿈</p><div class="actions"><button class="btn" id="fashionImportCancel">취소</button><button class="btn" id="fashionMerge">기존 목록에 추가</button><button class="btn danger" id="fashionReplace">전체 교체</button></div></div></dialog><div class="toast" id="toast" role="status"></div><script>
 document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===btn.dataset.tab));});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
-</script><script src="./artist-plus.js"></script></body></html>
+</script><script src="./artist-plus.js"></script><script src="./fashion.js"></script></body></html>

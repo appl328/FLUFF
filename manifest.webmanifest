@@ -1,7 +1,7 @@
 {
-  "name": "fluff",
-  "short_name": "fluff",
-  "description": "Artist statistics and image collection",
+  "name": "FLUFF",
+  "short_name": "FLUFF",
+  "description": "Artist and fashion image collections",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
