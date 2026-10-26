@@ -1,4 +1,4 @@
-const CACHE='fluff-image-bytes-v1.2.2-20261026-'+self.registration.scope;
+const CACHE='fluff-sort-v1.2.3-20261026-'+self.registration.scope;
 const ASSETS=["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon-48.png", "./artist-tags.html", "./artist-plus.js", "./artist-plus.css", "./fashion.js", "./fashion.css", "./prompt.js", "./prompt.css"];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const key of await caches.keys()){if(key===CACHE||!key.startsWith('fluff-'))continue;const old=await caches.open(key);if(await old.match(new URL('./index.html',self.registration.scope).href))await caches.delete(key);}await self.clients.claim();})()));

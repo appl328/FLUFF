@@ -81,7 +81,7 @@
       <div class="plus-head"><div><h1>Artist Tags +</h1><p class="plus-sub">이미지로 모아 보는 나만의 작가 태그</p></div><div class="plus-actions"><button class="btn primary" id="plusAdd" disabled>새 작가 등록</button><button class="btn" id="plusExport" disabled>전체 내보내기</button><button class="btn" id="plusImport" disabled>전체 불러오기</button><input type="file" id="plusBackupFile" accept="application/json,.json" hidden></div></div>
       
       <input id="plusSearch" class="plus-search" type="search" placeholder="작가 태그 검색" aria-label="보관함 작가 태그 검색">
-      <div class="plus-summary"><span id="plusCount" aria-live="polite">불러오는 중…</span><span>이미지를 눌러 크게 보기</span></div>
+      <div class="plus-summary"><span id="plusCount" aria-live="polite">불러오는 중…</span><select id="plusSort" class="plus-sort" aria-label="작가 정렬"><option value="newest">최신순</option><option value="abc">ABC순</option></select></div>
       <p id="plusError" class="plus-error" role="alert"></p><div id="plusGrid" class="plus-grid"></div>
       <p class="plus-sub">이미지와 태그는 이 브라우저에 저장됨 · 전체 내보내기에 남성·여성 이미지와 태그가 함께 포함됨 · 다른 기기로 이동하거나 브라우저 데이터를 지우기 전 백업 필요</p>
     </section>

@@ -4,6 +4,10 @@ const $=id=>document.getElementById(id), uid=()=>crypto.randomUUID();
 const MIME=new Set(['image/png','image/jpeg','image/webp','image/gif','image/avif']);
 let db, entries=[], draft=null, pending=null, busy=false, imageReads=0, viewerId=null;
 let urls=[]; const genders=new Map();
+const sortKey='fluff_artist_plus_sort:'+new URL('./',location.href).pathname;
+const tagOrder=new Intl.Collator('en',{sensitivity:'base',numeric:true});
+try{$('plusSort').value=localStorage.getItem(sortKey)==='abc'?'abc':'newest';}catch{}
+$('plusSort').onchange=()=>{try{localStorage.setItem(sortKey,$('plusSort').value);}catch{}render();};
 const message=(text)=>{const el=$('toast');el.textContent=text;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2000);};
 const errorText=e=>e?.name==='QuotaExceededError'?'브라우저 저장 공간이 부족함 · 백업 후 불필요한 이미지를 정리해 주세요':e?.message||'저장 작업을 완료하지 못했습니다';
 function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('fluff_artist_plus_v1:'+new URL('./',location.href).pathname,1);req.onupgradeneeded=()=>req.result.createObjectStore('entries',{keyPath:'id'});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>{$('plusError').textContent='다른 fluff 창을 닫고 다시 열어 주세요';};});}
@@ -17,7 +21,7 @@ function button(text,cls,action,label){const b=document.createElement('button');
 function selected(id){return entries.find(e=>e.id===id);}
 function activeGender(e){return genders.get(e.id)||'male';}
 function imagesFor(e){return e.images.filter(im=>(im.gender||'male')===activeGender(e));}
-function render(){if($('plusViewer').open)$('plusViewer').close();urls.forEach(URL.revokeObjectURL);urls=[];const grid=$('plusGrid');grid.replaceChildren();const q=$('plusSearch').value.trim().toLocaleLowerCase();const list=entries.filter(e=>e.tag.toLocaleLowerCase().includes(q)).sort((a,b)=>b.createdAt-a.createdAt);
+function render(){if($('plusViewer').open)$('plusViewer').close();urls.forEach(URL.revokeObjectURL);urls=[];const grid=$('plusGrid');grid.replaceChildren();const q=$('plusSearch').value.trim().toLocaleLowerCase();const list=entries.filter(e=>e.tag.toLocaleLowerCase().includes(q)).sort((a,b)=>($('plusSort').value==='abc'?tagOrder.compare(a.tag,b.tag):0)||b.createdAt-a.createdAt);
 $('plusCount').textContent=`${list.length}명${q?' / 전체 '+entries.length+'명':''} · 이미지 ${list.reduce((n,e)=>n+e.images.length,0)}장`;
 if(!list.length){const empty=document.createElement('div');empty.className='plus-empty';empty.textContent=q?'검색 결과가 없음':'등록된 작가가 없음';grid.append(empty);return;}
 for(const e of list){const card=document.createElement('article');card.className='plus-card';card.dataset.id=e.id;const media=document.createElement('div');media.className='plus-media';const group=imagesFor(e),gender=activeGender(e),genderName=gender==='male'?'남성':'여성';const photo=button('','plus-photo',()=>openViewer(e.id),e.tag+' '+genderName+' 이미지 보기');if(group.length){const img=document.createElement('img');img.loading='lazy';img.draggable=false;img.alt=e.tag+' '+genderName+' 이미지';img.src=objectURL(group[0].blob);photo.append(img);}else{const empty=document.createElement('span');empty.className='plus-no-image';empty.textContent=genderName+' 이미지 없음';photo.append(empty);}media.append(photo);
