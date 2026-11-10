@@ -1,5 +1,5 @@
-const CACHE='fluff-style-v1.3-20261103-'+self.registration.scope;
-const ASSETS=["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon-48.png", "./artist-tags.html", "./artist-plus.js", "./artist-plus.css", "./fashion.js", "./fashion.css", "./prompt.js", "./prompt.css", "./style.js", "./style.css"];
+const CACHE='fluff-all-v1.4-20261110-'+self.registration.scope;
+const ASSETS=["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon-48.png", "./artist-tags.html", "./artist-plus.js", "./artist-plus.css", "./fashion.js", "./fashion.css", "./prompt.js", "./prompt.css", "./style.js", "./style.css", "./app-backup.js"];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const key of await caches.keys()){if(key===CACHE||!key.startsWith('fluff-'))continue;const old=await caches.open(key);if(await old.match(new URL('./index.html',self.registration.scope).href))await caches.delete(key);}await self.clients.claim();})()));
 self.addEventListener('fetch',e=>{const url=new URL(e.request.url);if(e.request.method!=='GET'||url.origin!==self.location.origin||!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;

@@ -61,5 +61,17 @@ async function parseBackup(file){const data=JSON.parse(await file.text());if(dat
 $('promptImport').onclick=()=>$('promptBackupFile').click();$('promptBackupFile').onchange=async ev=>{const file=ev.target.files[0];ev.target.value='';if(!file||busy)return;lock(true);$('promptError').textContent='백업 확인 중…';try{pending=await parseBackup(file);$('promptImportSummary').textContent=versions.map(v=>v+' '+pending.filter(e=>e.version===v).length+'개').join(' · ');$('promptError').textContent='';$('promptImportDialog').showModal();}catch(e){pending=null;$('promptError').textContent=errorText(e);}finally{lock(false);}};
 async function importEntries(replace){if(busy||!pending)return;if(replace&&!confirm('모든 카테고리의 프롬프트 카드를 백업 내용으로 교체합니다. 계속할까요?'))return;lock(true);try{await write(store=>{if(replace)store.clear();for(const e of pending){if(replace)store.put(e);else{const req=store.get(e.id);req.onsuccess=()=>{if(!req.result)store.put(e);};}}});entries=await readAll();render();$('promptImportDialog').close();pending=null;message(replace?'전체 복원 완료':'목록 추가 완료');}catch(e){$('promptError').textContent=errorText(e);$('promptImportDialog').close();}finally{lock(false);}}
 $('promptMerge').onclick=()=>importEntries(false);$('promptReplace').onclick=()=>importEntries(true);$('promptImportCancel').onclick=()=>{$('promptImportDialog').close();pending=null;};$('promptImportDialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();else pending=null;});
+
+window.FluffCollections=window.FluffCollections||{};
+window.FluffCollections['prompt']={
+ available:()=>!!db&&!busy&&!imageReads&&!$('promptEditor').open,
+ lock,
+ async export(){const records=[];for(const e of await readAll()){const images=[];for(const im of e.images)images.push({id:im.id,name:im.name,gender:im.gender||'male',data:await toDataURL(im.blob)});records.push({...e,images});}return {format:'fluff-prompt',version:1,entries:records};},
+ async prepare(value){const rows=await parseBackup(new Blob([JSON.stringify(value)],{type:'application/json'}));return await Promise.all(rows.map(async e=>({...e,images:await Promise.all(e.images.map(async im=>({...im,blob:new Blob([await im.blob.arrayBuffer()],{type:im.blob.type})})))})));},
+ async snapshot(){return await Promise.all((await readAll()).map(async e=>({...e,images:await Promise.all(e.images.map(async im=>({...im,blob:new Blob([await im.blob.arrayBuffer()],{type:im.blob.type})})))})));},
+ async replace(rows){await write(store=>{store.clear();for(const row of rows)store.put(row);});},
+ async refresh(){entries=await readAll();render();}
+};
+
 (async()=>{try{db=await openDB();db.onversionchange=()=>db.close();entries=await readAll();render();lock(false);}catch(e){$('promptError').textContent='로컬 저장소를 열지 못했습니다 · '+errorText(e);$('promptCount').textContent='저장소 접근 실패';}})();
 })();

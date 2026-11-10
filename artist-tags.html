@@ -143,6 +143,8 @@ main{padding:0 4px 12px}input,select{font-size:16px;min-height:44px;min-width:0}
  .pager{padding-bottom:16px}.pager span{text-align:center}
 }
 .local-storage{align-items:center;justify-content:space-between}.local-storage span{font-size:12px;color:var(--fg2);overflow-wrap:anywhere;min-width:0;flex:1}.local-storage button{font-size:12px}
+
+.why,.stat .why{width:18px;height:18px;min-height:18px;padding:0;font-size:10px}
 </style>
 </head>
 <body>
@@ -573,6 +575,7 @@ $('#clearStored').onclick=async()=>{
 };
 (async()=>{const token=readToken;try{const saved=await savedData('get');if(token!==readToken||!saved)return;accept(saved.data);showStorage(saved.name,true);}catch(e){if(token===readToken)$('#err').textContent='저장 데이터를 복원하지 못했습니다 · 파일을 직접 불러와 주세요';}})();
 
+window.__statsBackup={read:()=>queueStorage(()=>savedData('get')),validate(v){if(v!==null){if(!v||typeof v.name!=='string')throw Error('통계 백업 형식 오류');validateData(v.data);}},write:v=>queueStorage(()=>savedData(v===null?'delete':'put',v))};
 window.__viewer = { accept, parseCsv, syncTopHeight, applyHash,
                     get data() { return DATA; } };
 </script>
